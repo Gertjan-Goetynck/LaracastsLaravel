@@ -7,6 +7,11 @@ use App\Project;
 
 class ProjectsController extends Controller
 {
+
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
     /**
      * Display a listing of the resource.
      *
@@ -14,8 +19,8 @@ class ProjectsController extends Controller
      */
     public function index()
     {
-        $projects = Project::all();
-
+        $projects = Project::where('owner_id', auth()->id())->get();
+        //$projects = Project::all();
 
         return view('projects.index',['projects' => $projects]);
     }
@@ -36,14 +41,22 @@ class ProjectsController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store()
     {
-        $project = new Project;
 
-        $project->title = request('title');
-        $project->description = request('description');
+        $validated = request()->validate([
+            'title'=>['required','min:3'],
+            'description'=>['required', 'min:5'],
+        ]);
 
-        $project->save();
+        Project::create($validated + ['owner_id' => auth()->id()]);
+
+        // $project = new Project;
+
+        // $project->title = request('title');
+        // $project->description = request('description');
+
+        // $project->save();
 
         return redirect('/projects');
     }
@@ -54,9 +67,20 @@ class ProjectsController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Project $project)
     {
-        //
+        // if($project->owner_id !== auth()->id()){
+        //     abort(403);
+        // }
+
+        //abort_unless(auth()->user()->owns($project),403);
+        //abort_if($project->owner_id !== auth()->id(),403);
+
+        $this->authorize('update',$project);
+
+        //abort_if(\Gate::denies('update',$project),403);
+
+        return view('projects.show', ['project'=>$project]);
     }
 
     /**
@@ -65,10 +89,10 @@ class ProjectsController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
-    {
-        
-        $project = Project::find($id);
+    public function edit(Project $project)
+    { 
+        $this->authorize('update',$project);
+
         return view('projects.edit',['project'=>$project]);
     }
 
@@ -79,14 +103,14 @@ class ProjectsController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
-    {
-        $project = Project::find($id);
-        
-        $project->title = request('title');
-        $project->description = request('description');
+    public function update(Project $project)
+    {        
+        $this->authorize('update',$project);
+        $project->update(request(['title','description']));
+        // $project->title = request('title');
+        // $project->description = request('description');
 
-        $project->save();
+        // $project->save();
 
         return redirect('projects');
     }
@@ -97,10 +121,11 @@ class ProjectsController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Project $project)
     {
-        //
-        Project::find($id)->delete();
+        $this->authorize('update',$project);
+
+        $project->delete();
 
         return redirect('/projects');
     }

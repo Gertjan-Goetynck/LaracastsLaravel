@@ -5,7 +5,7 @@
 <form action="/projects/{{$project->id}}" method="POST" style="margin-bottom:1rem;">
     <!-- {{ csrf_field() }}
     {{ method_field('PUT') }} -->
-    @medthod('DELETE')
+    @method('PUT')
     @csrf
     <div class="field">
         <label class="label" for="title">Title</label>
